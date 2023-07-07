@@ -14,6 +14,14 @@ var fileDialog: FileDialog
 
 var loadedFilePath: String
 
+var colorPreview: ColorRect
+var redInput: LineEdit
+var greenInput: LineEdit
+var blueInput: LineEdit
+
+
+
+
 func _ready():
 	sliderBaseDamage = HSlider.new()
 	sliderMaxTrajectory = HSlider.new()
@@ -93,6 +101,43 @@ func _ready():
 	importButton.connect("pressed", self, "_on_import_button_pressed")
 	saveButton.connect("pressed", self, "_on_save_button_pressed")
 	fileDialog.connect("file_selected", self, "_on_file_selected")
+	
+	colorPreview = ColorRect.new()
+	colorPreview.rect_min_size = Vector2(100, 100)
+	colorPreview.rect_position = Vector2(550, 50)
+	add_child(colorPreview)
+
+	redInput = LineEdit.new()
+	redInput.rect_min_size = Vector2(50, 20)
+	redInput.rect_position = Vector2(670, 50)
+	redInput.text = "255"  # Default value
+	add_child(redInput)
+
+	greenInput = LineEdit.new()
+	greenInput.rect_min_size = Vector2(50, 20)
+	greenInput.rect_position = Vector2(670, 80)
+	greenInput.text = "255"  # Default value
+	add_child(greenInput)
+
+	blueInput = LineEdit.new()
+	blueInput.rect_min_size = Vector2(50, 20)
+	blueInput.rect_position = Vector2(670, 110)
+	blueInput.text = "255"  # Default value
+	add_child(blueInput)
+
+	redInput.connect("text_changed", self, "_on_color_input_changed")
+	greenInput.connect("text_changed", self, "_on_color_input_changed")
+	blueInput.connect("text_changed", self, "_on_color_input_changed")
+	
+
+func _on_color_input_changed(newText: String) -> void:
+	var red = int(redInput.text)
+	var green = int(greenInput.text)
+	var blue = int(blueInput.text)
+
+	var color = Color(red / 255.0, green / 255.0, blue / 255.0)
+	colorPreview.color = color
+
 
 func _on_slider_value_changed(value: float, label: Label) -> void:
 	if label == labelBaseDamage:
@@ -108,9 +153,6 @@ func _on_slider_value_changed(value: float, label: Label) -> void:
 		sliderBaseDamage.set_value(baseDamageValue)
 		labelBaseDamage.text = "BaseDamage: " + str(baseDamageValue)
 
-
-func _on_import_button_pressed() -> void:
-	fileDialog.popup_centered()
 
 func _on_save_button_pressed() -> void:
 	if loadedFilePath != "":
@@ -131,6 +173,15 @@ func _on_save_button_pressed() -> void:
 					line = "MaxTrajectory = " + str(int(sliderMaxTrajectory.value)) + ","
 				if line.find("DesiredSpeed =") != -1:
 					line = "DesiredSpeed = " + str(int(sliderDesiredSpeed.value)) + ","
+				if line.find("Color = Color(red:") != -1:
+					# Extract the color values
+					var red = int(redInput.text)
+					var green = int(greenInput.text)
+					var blue = int(blueInput.text)
+
+					# Construct the updated color line
+					line = "Color = Color(red: " + str(red) + ", green: " + str(green) + ", blue: " + str(blue) + ", alpha: 1),"
+
 				updatedLines.append(line)
 
 			if file.open(loadedFilePath, File.WRITE) == OK:
@@ -145,6 +196,10 @@ func _on_save_button_pressed() -> void:
 	else:
 		print("No file is loaded. Please import a .cs file.")
 
+
+
+func _on_import_button_pressed() -> void:
+	fileDialog.popup_centered()
 
 func _on_file_selected(path: String) -> void:
 	print("Selected file:", path)
@@ -172,4 +227,27 @@ func _on_file_selected(path: String) -> void:
 				print("DesiredSpeed:", desired_speed)
 				sliderDesiredSpeed.set_value(desired_speed)
 
+			if line.find("Color = Color(") != -1:
+				# Extract the numbers from the Color format
+				var color_start_index = line.find("Color(") + "Color(".length()
+				var color_end_index = line.find(")", color_start_index)
+				var color_values_str = line.substr(color_start_index, color_end_index - color_start_index)
+				var color_values = color_values_str.split(",")
+
+				# Extract only the numbers from color values
+				var red = 0
+				var green = 0
+				var blue = 0
+				if color_values.size() >= 3:
+					red = color_values[0].to_int()
+					green = color_values[1].to_int()
+					blue = color_values[2].to_int()
+
+				# Update color values
+				redInput.text = str(red)
+				greenInput.text = str(green)
+				blueInput.text = str(blue)
+
 	file.close()
+
+
